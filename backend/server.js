@@ -74,6 +74,19 @@ app.post('/distribute', async (req, res) => {
   }
 });
 
+// Route: 查詢 Token 創建狀態
+app.get('/token-status/:jobId', async (req, res) => {
+  const { jobId } = req.params;
+
+  try {
+    const response = await metal.get(`/merchant/create-token/status/${jobId}`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch token status' });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

@@ -28,7 +28,34 @@ function App() {
         symbol: tokenSymbol,
         merchantAddress: merchantAddress,
       });
+      
       setTokenResult(response.data);
+      
+      // 如果狀態是 creating，開始輪詢檢查狀態
+      if (response.data["status"] === "creating" && response.data["token"]["jobId"]) {
+        console.log(response.data["token"]["jobId"]);
+        const checkStatus = async () => {
+          try {
+            console.log(response.data["token"]["jobId"]);
+            const statusResponse = await axios.get(
+              `http://localhost:3001/token-status/${response.data["token"]["jobId"]}`
+            );
+            
+            // 更新顯示的結果
+            setTokenResult(statusResponse.data);
+            
+            // 如果仍在創建中，繼續檢查
+            if (statusResponse.data["status"] === "pending") {
+              setTimeout(checkStatus, 2000); // 每2秒檢查一次
+            }
+          } catch (error) {
+            console.error("檢查狀態時發生錯誤:", error);
+          }
+        };
+          
+        // 開始檢查狀態
+        checkStatus();
+      }
     } catch (error) {
       console.error(error);
       setTokenResult({ error: error.response?.data || error.message });
@@ -161,25 +188,7 @@ function App() {
               backgroundColor: "#4299e1",
               color: "#fff",
             }}
-            onClick={async (e) => {
-              e.preventDefault();
-              try {
-                const response = await axios.post(
-                  "http://localhost:3001/create-token",
-                  {
-                    name: tokenName,
-                    symbol: tokenSymbol,
-                    merchantAddress: merchantAddress,
-                  },
-                );
-                setTokenResult(response.data);
-              } catch (error) {
-                console.error(error);
-                setTokenResult({
-                  error: error.response?.data || error.message,
-                });
-              }
-            }}
+            onClick={handleCreateToken}
           >
             建立 Token
           </button>
