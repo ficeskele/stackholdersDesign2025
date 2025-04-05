@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
   res.send("Hello from TaskBoard Equity API");
 });
 
-// Route: 建立 Token 使用 Merchant 端點
+// Route: Create Token using Merchant endpoint
 app.post("/create-token", async (req, res) => {
   try {
     const { name, symbol, merchantAddress } = req.body;
@@ -45,7 +45,7 @@ app.post("/create-token", async (req, res) => {
   }
 });
 
-// Route: 創建或取得 Holder
+// Route: Create or Retrieve Holder
 app.post("/create-holder", async (req, res) => {
   const { userId } = req.body;
 
@@ -58,7 +58,7 @@ app.post("/create-holder", async (req, res) => {
   }
 });
 
-// Route: 分發股份
+// Route: Distribute Tokens
 app.post("/distribute", async (req, res) => {
   const { tokenAddress, recipientAddress, amount } = req.body;
 
@@ -75,7 +75,7 @@ app.post("/distribute", async (req, res) => {
   }
 });
 
-// Route: 查詢 Token 創建狀態
+// Route: Get Token Creation Status
 app.get("/token-status/:jobId", async (req, res) => {
   const { jobId } = req.params;
 
@@ -96,18 +96,16 @@ app.get("/token-status/:jobId", async (req, res) => {
  *   - answers: an array of 15 numbers (each 1 to 4) representing the answer for each question.
  *
  * The endpoint will launch Puppeteer (headless) to load the Foundrs website,
- * fill in the form with the provided data (without any randomization),
+ * fill in the form with the provided data (without randomization),
  * wait for the page to compute the equity table, and then extract and return the results.
  */
 app.post("/calculate-equity", async (req, res) => {
   try {
-    // Use provided data or fallback defaults
     const { founders, answers } = req.body;
     const finalFounders =
       Array.isArray(founders) && founders.length > 0
         ? founders
         : ["Founder A", "Founder B", "Founder C", "Founder D"];
-    // Expect exactly 15 answers; if not provided, use default values.
     const finalAnswers =
       Array.isArray(answers) && answers.length === 15
         ? answers
@@ -153,12 +151,10 @@ app.post("/calculate-equity", async (req, res) => {
       { prefix: "connections", type: "checkbox" },
     ];
 
-    // Instead of randomizing, fill in answers based on finalAnswers array.
-    // For each question, select the option matching the provided number (1-indexed).
     await page.evaluate(
       (questionMap, answers) => {
         questionMap.forEach((q, idx) => {
-          const answer = answers[idx]; // Expected number 1 to 4
+          const answer = answers[idx];
           const elementId = `${q.prefix}-${answer}`;
           const el = document.getElementById(elementId);
           if (el) {
@@ -171,10 +167,8 @@ app.post("/calculate-equity", async (req, res) => {
       finalAnswers
     );
 
-    // Allow the page's compute() to run and update the equity table
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Extract the final equity table and any error message
     const result = await page.evaluate(() => {
       const rows = [];
       document.querySelectorAll("#equity tbody tr").forEach((row) => {
@@ -198,5 +192,5 @@ app.post("/calculate-equity", async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
