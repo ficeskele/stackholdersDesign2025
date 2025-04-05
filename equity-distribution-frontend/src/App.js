@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import "./App.css"; // 你可以在這裡加入自訂 CSS 或 Tailwind classes
+import { SHA256 } from 'crypto-js'; // 添加加密函式庫
 
 function App() {
   // 建立 Token 狀態
@@ -11,6 +12,7 @@ function App() {
 
   // 建立 Holder 狀態
   const [userId, setUserId] = useState("");
+  const [encryptedUserId, setEncryptedUserId] = useState("");
   const [holderResult, setHolderResult] = useState(null);
 
   // 分發股份狀態
@@ -18,6 +20,33 @@ function App() {
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [distributeResult, setDistributeResult] = useState(null);
+
+  // 當使用者輸入 ID 時進行加密
+  const handleUserIdChange = (e) => {
+    const input = e.target.value;
+    setUserId(input);
+    if (input) {
+      // 先進行 SHA-256 加密
+      const hashedValue = SHA256(input).toString();
+      
+      // 將十六進制轉換為數字
+      let numericHash = '';
+      for (let i = 0; i < hashedValue.length; i++) {
+        // 將每個十六進制字符轉換為對應的數字（0-15）
+        const num = parseInt(hashedValue[i], 16);
+        // 確保每個數字都是兩位數（補零）
+        numericHash += num.toString().padStart(2, '0');
+      }
+      
+      // 如果需要縮短結果，可以取前面特定長度
+      const maxLength = 64; // 可以調整這個長度
+      numericHash = numericHash.slice(0, maxLength);
+      
+      setEncryptedUserId(numericHash);
+    } else {
+      setEncryptedUserId("");
+    }
+  };
 
   // 呼叫後端 API 建立 Token
   const handleCreateToken = async (e) => {
@@ -67,7 +96,7 @@ function App() {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:3001/create-holder", {
-        userId: userId,
+        userId: encryptedUserId, // 使用加密後的 ID
       });
       setHolderResult(response.data);
     } catch (error) {
@@ -232,7 +261,7 @@ function App() {
             <input
               type="text"
               value={userId}
-              onChange={(e) => setUserId(e.target.value)}
+              onChange={handleUserIdChange}
               style={{
                 width: "100%",
                 border: "1px solid #e2e8f0",
@@ -242,6 +271,23 @@ function App() {
               required
             />
           </div>
+          {encryptedUserId && (
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", marginBottom: "0.25rem", color: "#718096" }}>
+                加密後的 ID:
+              </label>
+              <div style={{
+                padding: "0.5rem",
+                backgroundColor: "#f7fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "0.25rem",
+                fontSize: "0.875rem",
+                wordBreak: "break-all"
+              }}>
+                {encryptedUserId}
+              </div>
+            </div>
+          )}
           <button
             type="submit"
             style={{
